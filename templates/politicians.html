@@ -1,0 +1,8 @@
+<h2>국회의원 목록</h2>
+<ul>
+  {% for pid, name, party, district in politicians %}
+    <li>
+      <a href="/politician/{{ pid }}">{{ name }}</a> - {{ party }} / {{ district }}
+    </li>
+  {% endfor %}
+</ul>
