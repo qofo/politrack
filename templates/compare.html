@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>의원 비교</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<h1>의원 비교</h1>
+<!-- 검색 폼 -->
+<form method="POST">
+    <input type="text" name="keyword" placeholder="이름 또는 지역구로 검색" value="{{ request.form.get('keyword', '') }}">
+    {% for mc in selected_mona_cds %}
+        <input type="hidden" name="selected_mona_cd" value="{{ mc }}">
+    {% endfor %}
+    <button type="submit" name="search" value="1">검색</button>
+</form>
+
+<!-- 검색 결과 -->
+{% if search_results %}
+    <form method="POST">
+        <p>비교할 의원을 선택(최대 4명):</p>
+        {% for mc in selected_mona_cds %}
+            <input type="hidden" name="selected_mona_cd" value="{{ mc }}">
+        {% endfor %}
+        {% for m in search_results %}
+            <input type="checkbox" name="search_result_mona_cd" value="{{m.mona_cd}}"
+                {% if m.mona_cd in selected_mona_cds %}checked{% endif %}>
+            {{m.hg_nm}} ({{m.poly_nm}}, {{m.orig_nm}})
+            <br>
+        {% endfor %}
+        <button type="submit" name="compare" value="1">비교</button>
+    </form>
+{% endif %}
+
+<!-- 비교 결과 그래프 -->
+{% if selected_members %}
+    <h2>비교 결과</h2>
+    <canvas id="attendanceChart" width="400" height="200"></canvas>
+    <canvas id="billsChart" width="400" height="200"></canvas>
+    <canvas id="fundingChart" width="600" height="300"></canvas>
+    <script>
+        // 출석률
+        var attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(attendanceCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.names|tojson }},
+                datasets: [{
+                    label: '출석률(%)',
+                    data: {{ chart_data.attendance|tojson }},
+                    backgroundColor: '#36a2eb'
+                }]
+            }
+        });
+        // 법안수
+        var billsCtx = document.getElementById('billsChart').getContext('2d');
+        new Chart(billsCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.names|tojson }},
+                datasets: [{
+                    label: '법안수',
+                    data: {{ chart_data.bills|tojson }},
+                    backgroundColor: '#ff6384'
+                }]
+            }
+        });
+        // 정치자금 대분류 그룹 막대그래프
+        var fundingCtx = document.getElementById('fundingChart').getContext('2d');
+        new Chart(fundingCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.funding_labels|tojson }},
+                datasets: [
+                    {% for m in selected_members %}
+                    {
+                        label: "{{ m.hg_nm }}",
+                        data: [
+                            {% for cat in chart_data.funding_labels %}
+                                {{ m.funding.get(cat, 0) }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: "{{ ['#36a2eb', '#ff6384', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', '#c9cbcf'][loop.index0 % 7] }}"
+                    },
+                    {% endfor %}
+                ]
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: '정치자금 대분류별 비율(%)' }
+                },
+                responsive: true,
+                scales: { y: { beginAtZero: true, max: 100 } }
+            }
+        });
+    </script>
+{% endif %}
+
+<a href="/">홈으로</a>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{member.hg_nm}} 프로필</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>{{member.hg_nm}} ({{member.poly_nm}}, {{member.orig_nm}})</h1>
+    <p>{{member.mem_title}}</p>
+    <h2>정치자금 대분류별 사용 비율</h2>
+    <canvas id="fundingPie"></canvas>
+    <script>
+        const ctx = document.getElementById('fundingPie').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ funding_data|map(attribute=0)|list|tojson }},
+                datasets: [{
+                    data: {{ funding_data|map(attribute=1)|list|tojson }},
+                    backgroundColor: [
+                        '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40', '#c9cbcf'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+    <a href="/">홈으로</a>
+</body>
+</html>

@@ -2,16 +2,7 @@ import pandas as pd
 import psycopg2
 from datetime import datetime
 
-def main():
-    conn = psycopg2.connect(
-        host="localhost",
-        port="5432",
-        user="postgres",
-        password="1234",
-        database="postgres"
-    )
-    cur = conn.cursor()
-
+def initSQL(cur):
     file_path = "2023_KAPF.xlsx"
     df = pd.read_excel(file_path, sheet_name=0, engine="openpyxl")
 
@@ -111,6 +102,36 @@ def main():
 
     conn.commit()
     print("✅ 데이터 적재 완료")
+
+def main():
+    conn = psycopg2.connect(
+        host="localhost",
+        port="5432",
+        user="postgres",
+        password="1234",
+        database="postgres"
+    )
+    cur = conn.cursor()
+
+    #initSQL(cur)
+
+    query = """
+    -- 1. 컬럼 추가
+ALTER TABLE funding ADD COLUMN category_major TEXT;
+ALTER TABLE funding ADD COLUMN category_minor TEXT;
+
+-- 2. 분리하여 업데이트
+UPDATE funding
+SET category_major = SPLIT_PART(type, '_', 1),
+    category_minor = SPLIT_PART(type, '_', 2);
+
+-- 3. 결과 확인
+SELECT type, category_major, category_minor FROM funding LIMIT 5;
+    """
+    
+    cur.execute(query)
+    conn.commit()
+    
     cur.close()
     conn.close()
 

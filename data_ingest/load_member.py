@@ -1,6 +1,6 @@
 import pandas as pd
 import psycopg2
-import json
+import ast
 from datetime import datetime
 
 def main():
@@ -14,13 +14,21 @@ def main():
     )
     cur = conn.cursor()
 
-    # Read the CSV file
+    # Read and parse the CSV exported from the Open Assembly API. The file
+    # contains a single row where the "row" column is a string representation
+    # of a list of dictionaries (not valid JSON). We therefore use
+    # ``ast.literal_eval`` instead of ``json.loads``.
     df = pd.read_csv("member_info.csv")
+    raw = str(df.loc[0, "row"]).strip()
+    if raw.startswith("\"") and raw.endswith("\""):
+        raw = raw[1:-1]
+    records = ast.literal_eval(raw)
     
-    # Create politician table if not exists
+    # Create a table to store detailed member information.  It is separate from
+    # the simple ``politician`` table used for funding data.
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS politician (
-            politician_id SERIAL PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS member (
+            member_id SERIAL PRIMARY KEY,
             hg_nm TEXT NOT NULL,
             hj_nm TEXT,
             eng_nm TEXT,
@@ -43,14 +51,13 @@ def main():
             secretary2 TEXT,
             mona_cd TEXT,
             mem_title TEXT,
+            assem_addr TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
-    # Insert data into politician table
-    for idx, row in df.iterrows():
-        # Parse the JSON string in the row column
-        data = json.loads(row['row'])
+    # Insert data into the member table
+    for data in records:
         
         # Prepare the values for insertion
         values = (
@@ -75,19 +82,21 @@ def main():
             data['SECRETARY'],
             data['SECRETARY2'],
             data['MONA_CD'],
-            data['MEM_TITLE']
+            data['MEM_TITLE'],
+            data['ASSEM_ADDR']
         )
-        
-        # Insert into politician table
+
+        # Insert into member table
         cur.execute("""
-            INSERT INTO politician (
-                hg_nm, hj_nm, eng_nm, bth_gbn_nm, bth_date, 
-                job_res_nm, poly_nm, orig_nm, elect_gbn_nm, 
-                cmit_nm, cmits, reele_gbn_nm, units, 
-                sex_gbn_nm, tel_no, e_mail, homepage, 
-                staff, secretary, secretary2, mona_cd, mem_title
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO member (
+                hg_nm, hj_nm, eng_nm, bth_gbn_nm, bth_date,
+                job_res_nm, poly_nm, orig_nm, elect_gbn_nm,
+                cmit_nm, cmits, reele_gbn_nm, units,
+                sex_gbn_nm, tel_no, e_mail, homepage,
+                staff, secretary, secretary2, mona_cd, mem_title,
+                assem_addr
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, values)
 
     # Commit the changes and close the connection

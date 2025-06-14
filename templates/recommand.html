@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>이슈 기반 추천</title>
+</head>
+<body>
+    <h1>이슈 기반 맞춤 추천</h1>
+    <form method="POST">
+        <input type="text" name="keyword" placeholder="키워드(#환경, #교육 등)">
+        <button type="submit">추천</button>
+    </form>
+    <ul>
+        {% for m in members %}
+        <li>{{m.hg_nm}} ({{m.poly_nm}}, {{m.orig_nm}})</li>
+        {% endfor %}
+    </ul>
+    <a href="/">홈으로</a>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POLITRACK - 의원 검색</title>
+</head>
+<body>
+    <h1>POLITRACK 통합 검색</h1>
+    <form method="POST">
+        <input type="text" name="keyword" placeholder="이름, 정당, 지역구">
+        <button type="submit">검색</button>
+    </form>
+    <ul>
+        {% for m in members %}
+        <li>
+            <a href="/profile/{{m.mona_cd}}">{{m.hg_nm}} ({{m.poly_nm}}, {{m.orig_nm}})</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <a href="/compare">의원 비교</a> | <a href="/recommend">추천</a>
+</body>
+</html>
